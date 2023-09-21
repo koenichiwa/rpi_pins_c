@@ -6,18 +6,20 @@ BUILD_DIR = ./build
 OUTPUT_NAME = test_delay
 SRC = $(SRC_DIR)/main.c
 OUT = $(BUILD_DIR)/$(OUTPUT_NAME)
-TEST_OUTPUT = ./test_output
 
 all: $(OUT)
 
 run: $(OUT)
-	./$(OUT)
+ifndef TEST_OUTPUT
+	$(error TEST_OUTPUT is not specified. Please provide a value when invoking make.)
+endif
+	@mkdir -p $(TEST_OUTPUT)
+	./$(OUT) $(TEST_OUTPUT)
 
 clean:
 	rm -rf $(BUILD_DIR)
-	rm -rf $(TEST_OUTPUT)
 
 $(OUT): $(SRC)
 	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-	@mkdir -p $(TEST_OUTPUT)
+	

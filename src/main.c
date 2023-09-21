@@ -5,14 +5,14 @@
 #include <pigpio.h>
 #include <time.h>
 #include <signal.h>
+#include <fcntl.h>
+#include <sys/stat.h>
 
 #define GPIO_IN 23
 #define GPIO_OUT 24
 #define BATCH_COUNT 100
 #define PULSE_COUNT 10000
 #define SLEEP_INTERVAL 2000
-
-// volatile sig_atomic_t signal_received = 0;
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 struct timespec write_moment, handle_moment;
@@ -21,9 +21,13 @@ int count = 0;
 
 void* blink_thread(void* arg);
 void handle_input(int gpio, int level, uint32_t tick);
-void test(int index);
+void test(int index, char directory[]);
 
-int main() {
+int main(int argc, char *argv[]) {
+    if(argc != 2) {
+        printf("ERROR: define an output directory");
+        return 1;
+    }
     if (gpioInitialise() == PI_INIT_FAILED) {
       printf("ERROR: Failed to initialize the GPIO interface.\n");
       return 1;
@@ -58,7 +62,7 @@ int main() {
     // Sometimes it seems that the thread starts too soon for it to handle input.
     sleep(1); 
     for(int i = 0; i < BATCH_COUNT; ++i) {
-        test(i);
+        test(i, argv[1]);
     }
     gpioSetMode(GPIO_OUT, PI_INPUT);
     printf("Terminate.\n");
@@ -66,7 +70,7 @@ int main() {
     return 0;
 }
 
-void test(int index) {
+void test(int index, char directory[]) {
     count = 0;
     printf("Spawn thread.\n");
     pthread_t blink_tid;
@@ -76,7 +80,7 @@ void test(int index) {
 
     pthread_mutex_lock(&mutex); // `handle_input` might still be doing work
     char filename[50];
-    sprintf(filename, "test_output/read_interval_%i.csv", index);
+    sprintf(filename, "%s/read_interval_%i.csv", directory, index);
     FILE *f = fopen(filename, "w");
     fprintf(f, ",n_secs_delay,\n");
     for(int i=0; i<count; i++){
@@ -85,6 +89,9 @@ void test(int index) {
     }
     pthread_mutex_unlock(&mutex);
     fclose(f);
+    if (chmod(filename, S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP | S_IROTH | S_IWOTH) != 0) {
+        printf("Error setting file permissions");
+    }
 }
 
 void* blink_thread(void* arg) {
@@ -118,7 +125,7 @@ void handle_input(int gpio, int level, uint32_t tick) {
     elapsed_time += (handle_moment.tv_nsec - write_moment.tv_nsec) ;
     if(count < PULSE_COUNT) {
         elapsed_times[count] = elapsed_time;
+        ++count;
     }
-    ++count;
     pthread_mutex_unlock(&mutex);
 }
