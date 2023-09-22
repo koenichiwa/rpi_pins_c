@@ -17,7 +17,7 @@
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 struct timespec write_moment, handle_moment;
 long int elapsed_times[PULSE_COUNT];
-int count = 0;
+int count = -1;
 
 void* blink_thread(void* arg);
 void handle_input(int gpio, int level, uint32_t tick);
@@ -62,6 +62,7 @@ int main(int argc, char *argv[]) {
     // Sometimes it seems that the thread starts too soon for it to handle input.
     sleep(1); 
     for(int i = 0; i < BATCH_COUNT; ++i) {
+        printf("Test %i.\n", i);
         test(i, argv[1]);
     }
     gpioSetMode(GPIO_OUT, PI_INPUT);
@@ -80,8 +81,10 @@ void test(int index, char directory[]) {
 
     pthread_mutex_lock(&mutex); // `handle_input` might still be doing work
     char filename[50];
+    printf("Start write.\n");
     sprintf(filename, "%s/read_interval_%i.csv", directory, index);
     FILE *f = fopen(filename, "w");
+    printf("Fiele opened.\n");
     fprintf(f, ",n_secs_delay,\n");
     for(int i=0; i<count; i++){
         printf("%i: %li\n", i, elapsed_times[i]);
@@ -97,9 +100,16 @@ void test(int index, char directory[]) {
 void* blink_thread(void* arg) {
     
     printf("Start blinking.\n");
-    for(int i = 0; i < PULSE_COUNT; ++i) {
+    while(1){
         pthread_mutex_lock(&mutex);
-        if(i%2) {
+        count++;
+        if(count >= PULSE_COUNT) {
+            pthread_mutex_unlock(&mutex);
+            break;
+        }
+        elapsed_times[count] = -1;
+
+        if(count%2) {
             clock_gettime(CLOCK_MONOTONIC_RAW, &write_moment);
             gpioWrite(GPIO_OUT, PI_HIGH);
         } else {
@@ -107,25 +117,24 @@ void* blink_thread(void* arg) {
             gpioWrite(GPIO_OUT, PI_LOW);
         }
         pthread_mutex_unlock(&mutex);
+        
         struct timespec interval = { 
             .tv_sec = 0,
             .tv_nsec = SLEEP_INTERVAL,
         };
         nanosleep(&interval, NULL);
     }
+
     printf("Stop blinking.\n");
     return NULL;
 }
 
 void handle_input(int gpio, int level, uint32_t tick) {
     clock_gettime(CLOCK_MONOTONIC_RAW, &handle_moment);
-
+    
     pthread_mutex_lock(&mutex);
     long int elapsed_time = (handle_moment.tv_sec - write_moment.tv_sec) * 1000000;
     elapsed_time += (handle_moment.tv_nsec - write_moment.tv_nsec) ;
-    if(count < PULSE_COUNT) {
-        elapsed_times[count] = elapsed_time;
-        ++count;
-    }
+    elapsed_times[count] = elapsed_time;
     pthread_mutex_unlock(&mutex);
 }
