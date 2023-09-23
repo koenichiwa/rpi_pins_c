@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -Wall -pthread
+CFLAGS = -Wall -pthread -O3
 LDFLAGS = -lpigpio -lrt
 SRC_DIR = ./src
 BUILD_DIR = ./build

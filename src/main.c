@@ -11,8 +11,8 @@
 #define GPIO_IN 23
 #define GPIO_OUT 24
 #define BATCH_COUNT 100
-#define PULSE_COUNT 10000
-#define SLEEP_INTERVAL 2000
+#define PULSE_COUNT 100000
+#define SLEEP_INTERVAL 20000
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 struct timespec write_moment, handle_moment;
