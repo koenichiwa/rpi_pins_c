@@ -10,11 +10,11 @@ OUT = $(BUILD_DIR)/$(OUTPUT_NAME)
 all: $(OUT)
 
 run: $(OUT)
-ifndef TEST_OUTPUT
-	$(error TEST_OUTPUT is not specified. Please provide a value when invoking make.)
+ifndef OUTPUT_DIR
+	$(error OUTPUT_DIR is not specified. Please provide a value when invoking make.)
 endif
-	@mkdir -p $(TEST_OUTPUT)
-	./$(OUT) $(TEST_OUTPUT)
+	@mkdir -p $(OUTPUT_DIR)
+	./$(OUT) $(OUTPUT_DIR)
 
 clean:
 	rm -rf $(BUILD_DIR)
@@ -22,4 +22,3 @@ clean:
 $(OUT): $(SRC)
 	@mkdir -p $(BUILD_DIR)
 	$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS)
-	

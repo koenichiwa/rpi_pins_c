@@ -11,8 +11,9 @@
 #define GPIO_IN 23
 #define GPIO_OUT 24
 #define BATCH_COUNT 100
-#define PULSE_COUNT 100000
-#define SLEEP_INTERVAL 20000
+#define PULSE_COUNT 10000
+// two milliseconds
+#define SLEEP_INTERVAL 2000000
 
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 struct timespec write_moment, handle_moment;
@@ -134,7 +135,9 @@ void handle_input(int gpio, int level, uint32_t tick) {
     
     pthread_mutex_lock(&mutex);
     long int elapsed_time = (handle_moment.tv_sec - write_moment.tv_sec) * 1000000;
-    elapsed_time += (handle_moment.tv_nsec - write_moment.tv_nsec) ;
-    elapsed_times[count] = elapsed_time;
+    elapsed_time += (handle_moment.tv_nsec - write_moment.tv_nsec);
+    if(elapsed_time<SLEEP_INTERVAL) {
+        elapsed_times[count] = elapsed_time;
+    }
     pthread_mutex_unlock(&mutex);
 }
