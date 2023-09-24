@@ -1,10 +1,9 @@
 #!/bin/bash
 file=$1
 cores=$2
-cd $OUTPUT_DIR
 
 max=`cat $file | grep "Max Latencies" | tr " " "\n" | sort -n | tail -1 | sed s/^0*//` || max=`cat $file | grep "Max Latencies" | tr " " "\n" | sort -n | tail -1`
-grep -v -e "^#" -e "^$" cyclictest_output | tr " " "\t" | sed -E 's/[[:space:]]+/\t/g' > histogram
+grep -v -e "^#" -e "^$" $file | tr " " "\t" | sed -E 's/[[:space:]]+/\t/g' > histogram
 
 for i in `seq 1 $cores`
 do
@@ -39,4 +38,3 @@ do
 done
 
 gnuplot -persist < plotcmd
-cd -
